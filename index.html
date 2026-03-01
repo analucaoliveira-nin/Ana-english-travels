@@ -1128,6 +1128,9 @@
   // CALENDAR
   let currentYear = 2026;
   let currentMonth = 2; // 0-indexed: 2 = March
+  const COURSE_START_YEAR = 2025;
+  const COURSE_START_MONTH = 2; // March (0-indexed)
+  const COURSE_START_DAY = 14; // First real class: March 14, 2025
 
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const monthNamesPT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -1180,7 +1183,7 @@
 
         const iso = cls_entry.date;
         clickAttr = `onclick="openModal('${iso}')"`;
-      } else if (dow === 1 || dow === 5) {
+      } else if ((dow === 1 || dow === 5) && date >= new Date(COURSE_START_YEAR, COURSE_START_MONTH, COURSE_START_DAY)) {
         cls += ' class-day';
       }
 
@@ -1256,6 +1259,8 @@
   }
 
   function changeMonth(dir) {
+    // Don't go before course start (March 2025)
+    if (dir < 0 && currentYear === COURSE_START_YEAR && currentMonth === COURSE_START_MONTH) return;
     currentMonth += dir;
     if (currentMonth > 11) { currentMonth = 0; currentYear++; }
     if (currentMonth < 0) { currentMonth = 11; currentYear--; }
