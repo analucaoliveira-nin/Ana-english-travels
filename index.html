@@ -871,62 +871,7 @@
       <h2><span>Nossa Jornada · Our Journey</span>How Far We've Travelled</h2>
     </div>
 
-    <div class="card" style="background: linear-gradient(135deg, var(--peach) 0%, var(--sage-light) 100%); border-color: var(--peach-dark); margin-bottom:32px">
-      <h3>🎉 Almost 1 year of English! · Quase 1 ano de inglês!</h3>
-      <p style="margin-top:10px">Começamos em março de 2024. Já completamos 4 unidades e estamos em revisão antes de avançar. Isso é incrível! ✈️<br>
-      <em>We started in March 2024. We've completed 4 units and are reviewing before moving forward. That's incredible!</em></p>
-    </div>
-
-    <div class="unit-list">
-      <div class="unit-item">
-        <div class="unit-num done">1</div>
-        <div class="unit-info">
-          <strong>Unit 1 — Introduction to English</strong>
-          <span>Alphabet, greetings, numbers 1-20, subject pronouns · ✅ Completed</span>
-        </div>
-        <div class="progress-bar-wrap"><div class="progress-bar" style="width:100%"></div></div>
-      </div>
-      <div class="unit-item">
-        <div class="unit-num done">2</div>
-        <div class="unit-info">
-          <strong>Unit 2 — Numbers, Time & Everyday Phrases</strong>
-          <span>Shopping, colours, money, "to be / to have" · ✅ Completed</span>
-        </div>
-        <div class="progress-bar-wrap"><div class="progress-bar" style="width:100%"></div></div>
-      </div>
-      <div class="unit-item">
-        <div class="unit-num done">3</div>
-        <div class="unit-info">
-          <strong>Unit 3 — Present Simple & Daily Routines</strong>
-          <span>Times of day, meals, Chicken Little · ✅ Completed</span>
-        </div>
-        <div class="progress-bar-wrap"><div class="progress-bar" style="width:100%"></div></div>
-      </div>
-      <div class="unit-item" style="border-color: var(--terracotta);">
-        <div class="unit-num current">4</div>
-        <div class="unit-info">
-          <strong>Unit 4 — Day to Day</strong>
-          <span>Prepositions, adverbs of frequency, time, months · 🔄 Reviewing now</span>
-        </div>
-        <div class="progress-bar-wrap"><div class="progress-bar" style="width:85%; background: var(--terracotta)"></div></div>
-      </div>
-      <div class="unit-item" style="opacity:0.5">
-        <div class="unit-num upcoming">5</div>
-        <div class="unit-info">
-          <strong>Unit 5 — Family & Personal Life</strong>
-          <span>Coming soon · Em breve</span>
-        </div>
-        <div class="progress-bar-wrap"><div class="progress-bar" style="width:0%"></div></div>
-      </div>
-      <div class="unit-item" style="opacity:0.4">
-        <div class="unit-num upcoming">6</div>
-        <div class="unit-info">
-          <strong>Unit 6 — Everyday Situations</strong>
-          <span>Restaurants, directions, doctor · Coming soon</span>
-        </div>
-        <div class="progress-bar-wrap"><div class="progress-bar" style="width:0%"></div></div>
-      </div>
-    </div>
+    <div id="progress-content"><!-- Populated by JS --></div>
   </section>
 
   <!-- CALENDAR -->
@@ -1468,6 +1413,144 @@
   }
 
   // ============================================================
+  // OUR JOURNEY — auto-calculated stats + unit roadmap
+  // ============================================================
+
+  // Unit roadmap (curated by Teacher Ana — easy to update here)
+  // status: 'done' | 'current' | 'upcoming'
+  const unitRoadmap = [
+    { num: 1, title: 'Introduction to English', desc: 'Alphabet, greetings, numbers 1-20, subject pronouns', status: 'done' },
+    { num: 2, title: 'Numbers, Time & Everyday Phrases', desc: 'Shopping, colours, money, "to be / to have"', status: 'done' },
+    { num: 3, title: 'Present Simple & Daily Routines', desc: 'Times of day, meals, Chicken Little', status: 'done' },
+    { num: 4, title: 'Day to Day', desc: 'Prepositions, adverbs of frequency, time, months', status: 'current' },
+    { num: 5, title: 'Family & Personal Life', desc: 'Coming soon · Em breve', status: 'upcoming' },
+    { num: 6, title: 'Everyday Situations', desc: 'Restaurants, directions, doctor · Coming soon', status: 'upcoming' },
+  ];
+
+  function renderProgress() {
+    const container = document.getElementById('progress-content');
+    const today = new Date();
+
+    // --- Auto-calculate stats from classLog ---
+    const realClasses = classLog.filter(function(c) { return !c.cancelled; });
+    const totalClasses = realClasses.length;
+
+    // Start date = earliest class
+    var startDate = null;
+    classLog.forEach(function(c) {
+      var d = new Date(c.date + 'T12:00:00');
+      if (!startDate || d < startDate) startDate = d;
+    });
+
+    // Duration in years and months
+    var years = 0, months = 0;
+    if (startDate) {
+      var diff = today.getTime() - startDate.getTime();
+      var totalMonths = Math.floor(diff / (1000 * 60 * 60 * 24 * 30.44));
+      years = Math.floor(totalMonths / 12);
+      months = totalMonths % 12;
+    }
+
+    // Duration label
+    var durationEN = '', durationPT = '';
+    if (years >= 2) {
+      durationEN = years + ' years of English!';
+      durationPT = years + ' anos de inglês!';
+    } else if (years === 1 && months > 0) {
+      durationEN = '1 year and ' + months + ' month' + (months > 1 ? 's' : '') + ' of English!';
+      durationPT = '1 ano e ' + months + (months > 1 ? ' meses' : ' mês') + ' de inglês!';
+    } else if (years === 1) {
+      durationEN = '1 year of English!';
+      durationPT = '1 ano de inglês!';
+    } else {
+      durationEN = months + ' months of English!';
+      durationPT = months + ' meses de inglês!';
+    }
+
+    // Most recent non-cancelled class
+    var latest = null;
+    realClasses.forEach(function(c) {
+      var d = new Date(c.date + 'T12:00:00');
+      if (d <= today && (!latest || d > new Date(latest.date + 'T12:00:00'))) latest = c;
+    });
+    var currentActivity = latest ? latest.unit : 'Getting started';
+
+    // Start month/year
+    var startMonthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var startLabel = startDate ? startMonthNames[startDate.getMonth()] + ' ' + startDate.getFullYear() : '';
+
+    // Completed units = ones marked 'done' in roadmap
+    var completedUnits = unitRoadmap.filter(function(u) { return u.status === 'done'; }).length;
+
+    // --- Build HTML ---
+    var html = '';
+
+    // Milestone card with stats
+    html += '<div class="card" style="background: linear-gradient(135deg, var(--peach) 0%, var(--sage-light) 100%); border-color: var(--peach-dark); margin-bottom:32px">';
+    html += '<h3>🎉 ' + durationEN + ' · ' + durationPT + '</h3>';
+    html += '<p style="margin-top:10px">Começamos em ' + startLabel + '. Já completamos ' + completedUnits + ' unidades e fizemos ' + totalClasses + ' aulas! ✈️<br>';
+    html += '<em>We started in ' + startLabel + '. We\'ve completed ' + completedUnits + ' units and had ' + totalClasses + ' classes!</em></p>';
+    html += '</div>';
+
+    // Stats row
+    html += '<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:16px; margin-bottom:32px">';
+    html += '<div class="card" style="text-align:center; padding:20px 16px">';
+    html += '<div style="font-size:32px; font-weight:700; color:var(--terracotta)">' + totalClasses + '</div>';
+    html += '<div style="font-size:13px; color:#9e7d6a">Classes · Aulas</div></div>';
+    html += '<div class="card" style="text-align:center; padding:20px 16px">';
+    html += '<div style="font-size:32px; font-weight:700; color:var(--sage)">' + completedUnits + '</div>';
+    html += '<div style="font-size:13px; color:#9e7d6a">Units Done · Completas</div></div>';
+    html += '<div class="card" style="text-align:center; padding:20px 16px">';
+    var yearsDisplay = years >= 1 ? years + (years > 1 ? ' yrs' : ' yr') : months + ' mo';
+    html += '<div style="font-size:32px; font-weight:700; color:var(--dusty-rose)">' + yearsDisplay + '</div>';
+    html += '<div style="font-size:13px; color:#9e7d6a">Learning · Estudando</div></div>';
+    html += '</div>';
+
+    // Currently working on
+    html += '<div class="card" style="border-color:var(--terracotta); margin-bottom:32px">';
+    html += '<div style="display:flex; align-items:center; gap:10px">';
+    html += '<span style="font-size:24px">📍</span>';
+    html += '<div><strong style="color:var(--terracotta)">Now · Agora</strong><br>';
+    html += '<span style="font-size:15px">' + currentActivity + '</span></div>';
+    html += '</div></div>';
+
+    // Unit roadmap
+    html += '<div class="unit-list">';
+    unitRoadmap.forEach(function(u) {
+      var statusClass = u.status;
+      var statusLabel = '';
+      var progress = '0%';
+      var extraStyle = '';
+      var barStyle = '';
+
+      if (u.status === 'done') {
+        statusLabel = '✅ Completed';
+        progress = '100%';
+      } else if (u.status === 'current') {
+        statusLabel = '🔄 In progress';
+        progress = '85%';
+        extraStyle = ' style="border-color: var(--terracotta);"';
+        barStyle = ' background: var(--terracotta)';
+      } else {
+        statusLabel = 'Coming soon · Em breve';
+        extraStyle = ' style="opacity:0.5"';
+      }
+
+      html += '<div class="unit-item"' + extraStyle + '>';
+      html += '<div class="unit-num ' + statusClass + '">' + u.num + '</div>';
+      html += '<div class="unit-info">';
+      html += '<strong>Unit ' + u.num + ' — ' + u.title + '</strong>';
+      html += '<span>' + u.desc + ' · ' + statusLabel + '</span>';
+      html += '</div>';
+      html += '<div class="progress-bar-wrap"><div class="progress-bar" style="width:' + progress + ';' + barStyle + '"></div></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+  }
+
+  // ============================================================
   // SONGS & VIDEOS — fallback data + render + load from sheet
   // Sheet columns: Type | Title | Artist | Description EN | Link
   // Type = "video" (big card) or "song" (grid card)
@@ -1662,6 +1745,7 @@
     // Render everything (whether from sheet or fallback)
     renderThisWeek();
     renderHomework();
+    renderProgress();
     renderCalendar();
     renderClassLog();
   }
