@@ -759,37 +759,7 @@
       <div class="icon">✏️</div>
       <h2><span>Lição de Casa · Homework</span>This Week's Homework</h2>
     </div>
-
-    <div class="hw-card">
-      <div class="hw-header">
-        <h3>📋 Homework — Unit 4 Review</h3>
-        <span class="badge new">Due Friday · Sexta-feira</span>
-      </div>
-      <div class="hw-body">
-        <p>Clique no botão abaixo para abrir a sua lição de casa. Lembre-se: faça uma cópia antes de escrever!<br>
-        <em>Click the button below to open your homework. Remember to make a copy before writing!</em></p>
-        <a href="https://docs.google.com/document/d/1QH-qyM0OU0HquitMWg5hAWrReaG2NlIOAlLpGvgvnlY/edit" target="_blank" class="hw-link">
-          ✏️ Open Homework · Abrir Lição de Casa
-        </a>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>📌 How to do your homework · Como fazer sua lição de casa</h3>
-      <ol style="padding-left:20px; margin-top:12px; line-height:2">
-        <li>Click the button above to open the document · Clique no botão acima</li>
-        <li>Go to <strong>File → Make a copy</strong> · Vá em <strong>Arquivo → Fazer uma cópia</strong></li>
-        <li>Name it with your name + date · Coloque seu nome + data</li>
-        <li>Write your answers in your copy · Escreva as respostas na sua cópia</li>
-        <li>Send the link to Ana on WhatsApp 💬</li>
-      </ol>
-    </div>
-
-    <div class="card" style="border-color: var(--sage-light);">
-      <h3>✅ Previous homework · Lição anterior</h3>
-      <p style="margin-top:10px">Unit 2 — Shopping & Colours homework has been corrected. Well done! 🌸<br>
-      <em>A lição de Unit 2 foi corrigida. Muito bem!</em></p>
-    </div>
+    <div id="homework-content"><!-- Populated by JS --></div>
   </section>
 
   <!-- THEORY -->
@@ -1408,6 +1378,96 @@
   }
 
   // ============================================================
+  // HOMEWORK — auto-update from classLog + /copy links + history
+  // ============================================================
+  function makeCopyUrl(url) {
+    if (!url) return '';
+    // Convert Google Docs /edit URL to /copy URL for one-click copy dialog
+    return url.replace(/\/(edit|view)([?#].*)?$/, '/copy');
+  }
+
+  function renderHomework() {
+    const container = document.getElementById('homework-content');
+    const today = new Date();
+    today.setHours(23, 59, 59);
+
+    // Get all non-cancelled classes with homework, sorted newest first
+    const withHw = classLog
+      .filter(function(c) {
+        return !c.cancelled
+          && c.homeworkUrl
+          && c.homeworkUrl !== '#REF!'
+          && c.homeworkUrl !== ''
+          && new Date(c.date + 'T12:00:00') <= today;
+      })
+      .sort(function(a, b) { return b.date.localeCompare(a.date); });
+
+    if (withHw.length === 0) {
+      container.innerHTML = '<div class="card"><p>No homework yet · Sem lição de casa ainda</p></div>';
+      return;
+    }
+
+    // Current homework = most recent
+    const current = withHw[0];
+    const d = new Date(current.date + 'T12:00:00');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    const dateStr = dd + '/' + mm + '/' + yy;
+    const copyUrl = makeCopyUrl(current.homeworkUrl);
+
+    // Current homework card
+    let html = '<div class="hw-card">';
+    html += '<div class="hw-header">';
+    html += '<h3>📋 ' + current.unit + '</h3>';
+    html += '<span class="badge new">' + dateStr + '</span>';
+    html += '</div>';
+    html += '<div class="hw-body">';
+    html += '<p>Clique no botão abaixo — uma cópia será criada automaticamente para você!<br>';
+    html += '<em>Click below — a copy will be created automatically for you!</em></p>';
+    html += '<div style="display:flex; gap:12px; flex-wrap:wrap;">';
+    if (copyUrl) {
+      html += '<a href="' + copyUrl + '" target="_blank" class="hw-link">📝 Make My Copy · Criar Minha Cópia</a>';
+    }
+    html += '<a href="' + current.homeworkUrl + '" target="_blank" class="hw-link" style="background:var(--warm-brown)">👀 View Original · Ver Original</a>';
+    html += '</div>';
+    html += '</div></div>';
+
+    // Simple instructions (just 2 steps now!)
+    html += '<div class="card">';
+    html += '<h3>📌 How to do your homework · Como fazer sua lição</h3>';
+    html += '<ol style="padding-left:20px; margin-top:12px; line-height:2.2">';
+    html += '<li>Click <strong>"Make My Copy"</strong> above → it opens a copy just for you<br><em>Clique em "Criar Minha Cópia" → abre uma cópia só para você</em></li>';
+    html += '<li>Write your answers and send the link to Ana on WhatsApp 💬<br><em>Escreva suas respostas e envie o link para Ana no WhatsApp</em></li>';
+    html += '</ol></div>';
+
+    // Previous homework (up to 5 recent ones)
+    const previous = withHw.slice(1, 6);
+    if (previous.length > 0) {
+      html += '<div class="card" style="border-color: var(--sage-light);">';
+      html += '<h3>📚 Previous homework · Lições anteriores</h3>';
+      html += '<div style="margin-top:12px">';
+      previous.forEach(function(hw) {
+        var pd = new Date(hw.date + 'T12:00:00');
+        var pdd = String(pd.getDate()).padStart(2, '0');
+        var pmm = String(pd.getMonth() + 1).padStart(2, '0');
+        var pyy = String(pd.getFullYear()).slice(-2);
+        var pDateStr = pdd + '/' + pmm + '/' + pyy;
+        var pCopy = makeCopyUrl(hw.homeworkUrl);
+        html += '<div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f0e8e0; flex-wrap:wrap; gap:8px">';
+        html += '<div><strong>' + hw.unit + '</strong><span style="color:#aaa; margin-left:8px; font-size:13px">' + pDateStr + '</span></div>';
+        html += '<div style="display:flex; gap:8px;">';
+        if (pCopy) html += '<a href="' + pCopy + '" target="_blank" style="color:var(--terracotta); font-weight:600; font-size:13px; text-decoration:none;">📝 Copy</a>';
+        html += '<a href="' + hw.homeworkUrl + '" target="_blank" style="color:var(--warm-brown); font-size:13px; text-decoration:none;">👀 View</a>';
+        html += '</div></div>';
+      });
+      html += '</div></div>';
+    }
+
+    container.innerHTML = html;
+  }
+
+  // ============================================================
   // SONGS & VIDEOS — fallback data + render + load from sheet
   // Sheet columns: Type | Title | Artist | Description EN | Link
   // Type = "video" (big card) or "song" (grid card)
@@ -1601,6 +1661,7 @@
     }
     // Render everything (whether from sheet or fallback)
     renderThisWeek();
+    renderHomework();
     renderCalendar();
     renderClassLog();
   }
