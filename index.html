@@ -703,7 +703,7 @@
         <div>
           <div class="btn-en">This Week's Class</div>
           <div class="btn-pt">Aula desta semana</div>
-          <div class="btn-desc" style="margin-top:8px">Unit 4 Review — Prepositions & Adverbs of Frequency<br>Clique aqui para ver os slides da aula</div>
+          <div class="btn-desc" style="margin-top:8px" id="home-this-week-desc">Loading... · Carregando...</div>
         </div>
       </a>
 
@@ -750,37 +750,7 @@
       <div class="icon">📅</div>
       <h2><span>Esta Semana · This Week</span>This Week's Class</h2>
     </div>
-
-    <div class="card">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px">
-        <h3>Unit 4 Review — Prepositions & Adverbs</h3>
-        <span class="badge review">Em revisão · Review</span>
-      </div>
-      <p style="margin-bottom:20px">Esta semana estamos revendo as preposições e os advérbios de frequência. Use os links abaixo para abrir os slides.<br>
-      <em>This week we're reviewing prepositions and adverbs of frequency. Use the links below to open the slides.</em></p>
-
-      <div style="display:flex; gap:12px; flex-wrap:wrap;">
-        <a href="https://docs.google.com/presentation/d/10c86VzmyhIOVdW2NMBrHGxnhGwkLwV93HRJMemPO8QE/edit" target="_blank" class="watch-btn">
-          🖥️ Open Class Slides · Abrir Slides da Aula
-        </a>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>📝 What we're practising · O que estamos praticando</h3>
-      <ul style="padding-left:20px; margin-top:12px">
-        <li>Adverbs of frequency: always, usually, often, sometimes, rarely, never</li>
-        <li>Time phrases: in the morning, at night, every day, on weekdays…</li>
-        <li>Prepositions: in, on, at, with, without, around, across, under</li>
-        <li>Rules for prepositions (always followed by a noun or -ing verb)</li>
-      </ul>
-    </div>
-
-    <div class="card">
-      <h3>💡 Tip for this week · Dica da semana</h3>
-      <p>Try to use one adverb of frequency in a real sentence every day! For example: <em>"I always drink coffee in the morning"</em> or <em>"I sometimes watch TV at night."</em><br><br>
-      Tente usar um advérbio de frequência em uma frase real todo dia!</p>
-    </div>
+    <div id="this-week-content"><!-- Populated by JS --></div>
   </section>
 
   <!-- HOMEWORK -->
@@ -1081,6 +1051,27 @@
 </footer>
 
 <script>
+  // ╔══════════════════════════════════════════════════════════════╗
+  // ║  ✏️  EDIT THIS EVERY WEEK · EDITE TODA SEMANA               ║
+  // ║  Just change the text below — nothing else!                 ║
+  // ║  Só mude o texto abaixo — nada mais!                        ║
+  // ╚══════════════════════════════════════════════════════════════╝
+  const THIS_WEEK = {
+    // What are we practising? · O que estamos praticando?
+    // Add or remove lines — just keep the quotes and commas!
+    // Adicione ou remova linhas — só mantenha as aspas e vírgulas!
+    topics: [
+      'Adverbs of frequency: always, usually, often, sometimes, rarely, never',
+      'Time phrases: in the morning, at night, every day, on weekdays…',
+      'Prepositions: in, on, at, with, without, around, across, under',
+      'Rules for prepositions (always followed by a noun or -ing verb)',
+    ],
+
+    // Tip of the week · Dica da semana
+    tipEN: 'Try to use one adverb of frequency in a real sentence every day! For example: "I always drink coffee in the morning" or "I sometimes watch TV at night."',
+    tipPT: 'Tente usar um advérbio de frequência em uma frase real todo dia!',
+  };
+
   // NAV
   function showSection(id) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -1406,6 +1397,85 @@
     renderClassLog();
   }
 
+  // THIS WEEK — auto-populate from classLog + THIS_WEEK config
+  function getCurrentClass() {
+    const today = new Date();
+    today.setHours(23, 59, 59); // include today's class
+    // Find most recent non-cancelled class with date ≤ today
+    const past = classLog
+      .filter(c => !c.cancelled && new Date(c.date + 'T12:00:00') <= today)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    return past[0] || null;
+  }
+
+  function renderThisWeek() {
+    const cls = getCurrentClass();
+    const container = document.getElementById('this-week-content');
+    const homeDesc = document.getElementById('home-this-week-desc');
+
+    if (!cls) {
+      container.innerHTML = '<div class="card"><p>No class data yet · Sem dados de aula ainda</p></div>';
+      if (homeDesc) homeDesc.innerHTML = 'Clique aqui para ver os slides da aula';
+      return;
+    }
+
+    // Format the date
+    const d = new Date(cls.date + 'T12:00:00');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    const dateStr = dd + '/' + mm + '/' + yy;
+
+    // Build slides + homework buttons
+    let buttons = '';
+    if (cls.slidesUrl && cls.slidesUrl !== '#REF!' && cls.slidesUrl !== '') {
+      buttons += '<a href="' + cls.slidesUrl + '" target="_blank" class="watch-btn">🖥️ Open Class Slides · Abrir Slides da Aula</a>';
+    }
+    if (cls.homeworkUrl && cls.homeworkUrl !== '#REF!' && cls.homeworkUrl !== '') {
+      buttons += '<a href="' + cls.homeworkUrl + '" target="_blank" class="watch-btn" style="background:var(--warm-brown)">✏️ Open Homework · Abrir Lição de Casa</a>';
+    }
+
+    // Build topics list
+    const topicsHTML = THIS_WEEK.topics.map(function(t) { return '<li>' + t + '</li>'; }).join('');
+
+    // Card 1: Unit + links
+    let html = '<div class="card">';
+    html += '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px">';
+    html += '<h3>' + cls.unit + '</h3>';
+    html += '<span class="badge review">' + dateStr + '</span>';
+    html += '</div>';
+    html += '<p style="margin-bottom:20px">Use os links abaixo para abrir os slides e a lição de casa.<br>';
+    html += '<em>Use the links below to open the slides and homework.</em></p>';
+    if (buttons) {
+      html += '<div style="display:flex; gap:12px; flex-wrap:wrap;">' + buttons + '</div>';
+    }
+    html += '</div>';
+
+    // Card 2: Topics
+    if (THIS_WEEK.topics.length > 0) {
+      html += '<div class="card">';
+      html += '<h3>📝 What we\'re practising · O que estamos praticando</h3>';
+      html += '<ul style="padding-left:20px; margin-top:12px">' + topicsHTML + '</ul>';
+      html += '</div>';
+    }
+
+    // Card 3: Tip
+    if (THIS_WEEK.tipEN) {
+      html += '<div class="card">';
+      html += '<h3>💡 Tip for this week · Dica da semana</h3>';
+      html += '<p>' + THIS_WEEK.tipEN + '<br><br>' + (THIS_WEEK.tipPT || '') + '</p>';
+      html += '</div>';
+    }
+
+    container.innerHTML = html;
+
+    // Update home page button
+    if (homeDesc) {
+      homeDesc.innerHTML = cls.unit + '<br>Clique aqui para ver os slides da aula';
+    }
+  }
+
+  renderThisWeek();
   renderCalendar();
   renderClassLog();
 </script>
