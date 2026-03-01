@@ -891,46 +891,7 @@
       <h2><span>Músicas e Vídeos · Songs & Videos</span>Songs & Videos</h2>
     </div>
 
-    <div class="card" style="margin-bottom:32px">
-      <h3>🎧 BBC Learning English</h3>
-      <p style="margin: 10px 0">Ótimo para treinar o ouvido com sotaque britânico, devagar e claro!<br>
-      <em>Great for training your ear with a clear British accent — slow and easy to understand.</em></p>
-      <a href="https://www.youtube.com/@BBCLearningEnglish" target="_blank" class="watch-btn">▶️ Watch on YouTube</a>
-    </div>
-
-    <div class="song-grid">
-      <div class="song-card">
-        <div class="song-icon">🐣</div>
-        <h4>Chicken Little</h4>
-        <div class="artist">Modern Fable · Fábula Moderna</div>
-        <div class="song-desc">Our class story! Practice what we learned together.<br>A história da nossa aula!</div>
-        <span class="badge done" style="margin-top:10px; display:inline-block">✅ Completed in class</span>
-      </div>
-
-      <div class="song-card">
-        <div class="song-icon">🎸</div>
-        <h4>Let It Be</h4>
-        <div class="artist">The Beatles</div>
-        <div class="song-desc">Simple words, beautiful melody. Perfect for A1 listening practice.<br>Palavras simples, melodia linda.</div>
-        <a href="https://www.youtube.com/results?search_query=let+it+be+beatles+lyrics" target="_blank" class="watch-btn">▶️ Listen · Ouvir</a>
-      </div>
-
-      <div class="song-card">
-        <div class="song-icon">☀️</div>
-        <h4>Here Comes the Sun</h4>
-        <div class="artist">The Beatles</div>
-        <div class="song-desc">Great for routines vocabulary! "Little darling, it's been a long cold lonely winter..."</div>
-        <a href="https://www.youtube.com/results?search_query=here+comes+the+sun+beatles+lyrics" target="_blank" class="watch-btn">▶️ Listen · Ouvir</a>
-      </div>
-
-      <div class="song-card">
-        <div class="song-icon">🌹</div>
-        <h4>La Vie en Rose</h4>
-        <div class="artist">Édith Piaf (English version)</div>
-        <div class="song-desc">A beautiful classic. The English lyrics are simple and poetic.<br>Um clássico lindo, letras simples em inglês.</div>
-        <a href="https://www.youtube.com/results?search_query=la+vie+en+rose+english+lyrics" target="_blank" class="watch-btn">▶️ Listen · Ouvir</a>
-      </div>
-    </div>
+    <div id="songs-content"><!-- Populated by JS --></div>
   </section>
 
   <!-- PROGRESS -->
@@ -1055,7 +1016,8 @@
   // ║  📊 GOOGLE SHEET URL — paste your published sheet URL here  ║
   // ║  Cole aqui o link da sua planilha publicada                 ║
   // ╚══════════════════════════════════════════════════════════════╝
-  const SHEET_URL = '';  // ← Paste your published Google Sheet CSV URL here
+  const SHEET_URL = '';       // ← Paste your Class Log sheet CSV URL here
+  const SONGS_SHEET_URL = ''; // ← Paste your Songs & Videos sheet CSV URL here
 
   // NAV
   function showSection(id) {
@@ -1442,6 +1404,102 @@
   }
 
   // ============================================================
+  // SONGS & VIDEOS — fallback data + render + load from sheet
+  // ============================================================
+  const songsData = [
+    { type: 'featured', icon: '🎧', title: 'BBC Learning English', artist: '', descEN: 'Great for training your ear with a clear British accent — slow and easy to understand.', descPT: 'Ótimo para treinar o ouvido com sotaque britânico, devagar e claro!', link: 'https://www.youtube.com/@BBCLearningEnglish', status: '' },
+    { type: 'song', icon: '🐣', title: 'Chicken Little', artist: 'Modern Fable · Fábula Moderna', descEN: 'Our class story! Practice what we learned together.', descPT: 'A história da nossa aula!', link: '', status: 'completed' },
+    { type: 'song', icon: '🎸', title: 'Let It Be', artist: 'The Beatles', descEN: 'Simple words, beautiful melody. Perfect for A1 listening practice.', descPT: 'Palavras simples, melodia linda.', link: 'https://www.youtube.com/results?search_query=let+it+be+beatles+lyrics', status: '' },
+    { type: 'song', icon: '☀️', title: 'Here Comes the Sun', artist: 'The Beatles', descEN: 'Great for routines vocabulary!', descPT: 'Ótimo para vocabulário de rotinas!', link: 'https://www.youtube.com/results?search_query=here+comes+the+sun+beatles+lyrics', status: '' },
+    { type: 'song', icon: '🌹', title: 'La Vie en Rose', artist: 'Édith Piaf (English version)', descEN: 'A beautiful classic. The English lyrics are simple and poetic.', descPT: 'Um clássico lindo, letras simples em inglês.', link: 'https://www.youtube.com/results?search_query=la+vie+en+rose+english+lyrics', status: '' },
+  ];
+
+  function renderSongs(data) {
+    const container = document.getElementById('songs-content');
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div class="card"><p>No songs yet · Sem músicas ainda</p></div>';
+      return;
+    }
+    let html = '';
+    const featured = data.filter(function(s) { return s.type === 'featured'; });
+    const songs = data.filter(function(s) { return s.type !== 'featured'; });
+
+    // Featured cards
+    featured.forEach(function(s) {
+      html += '<div class="card" style="margin-bottom:32px">';
+      html += '<h3>' + s.icon + ' ' + s.title + '</h3>';
+      html += '<p style="margin: 10px 0">' + s.descPT + '<br><em>' + s.descEN + '</em></p>';
+      if (s.link) {
+        html += '<a href="' + s.link + '" target="_blank" class="watch-btn">▶️ Watch on YouTube</a>';
+      }
+      html += '</div>';
+    });
+
+    // Song grid
+    if (songs.length > 0) {
+      html += '<div class="song-grid">';
+      songs.forEach(function(s) {
+        html += '<div class="song-card">';
+        html += '<div class="song-icon">' + s.icon + '</div>';
+        html += '<h4>' + s.title + '</h4>';
+        if (s.artist) html += '<div class="artist">' + s.artist + '</div>';
+        html += '<div class="song-desc">' + s.descEN + '<br>' + s.descPT + '</div>';
+        if (s.status === 'completed') {
+          html += '<span class="badge done" style="margin-top:10px; display:inline-block">✅ Completed in class</span>';
+        } else if (s.link) {
+          html += '<a href="' + s.link + '" target="_blank" class="watch-btn">▶️ Listen · Ouvir</a>';
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  async function loadSongs() {
+    if (SONGS_SHEET_URL) {
+      try {
+        const resp = await fetch(SONGS_SHEET_URL);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const csv = await resp.text();
+        const rows = csv.split('\n').slice(1);
+        const parsed = [];
+        rows.forEach(function(row) {
+          if (!row.trim()) return;
+          const cols = [];
+          let cur = '', inQ = false;
+          for (let i = 0; i < row.length; i++) {
+            const ch = row[i];
+            if (ch === '"') { inQ = !inQ; }
+            else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+            else { cur += ch; }
+          }
+          cols.push(cur.trim());
+          // Columns: Type | Icon | Title | Artist | Description EN | Description PT | Link | Status
+          parsed.push({
+            type: (cols[0] || 'song').toLowerCase(),
+            icon: cols[1] || '🎵',
+            title: cols[2] || '',
+            artist: cols[3] || '',
+            descEN: cols[4] || '',
+            descPT: cols[5] || '',
+            link: cols[6] || '',
+            status: (cols[7] || '').toLowerCase()
+          });
+        });
+        if (parsed.length > 0) {
+          songsData.length = 0;
+          parsed.forEach(function(e) { songsData.push(e); });
+          console.log('✅ Loaded ' + songsData.length + ' songs from Google Sheet');
+        }
+      } catch (err) {
+        console.warn('⚠️ Could not load Songs sheet, using fallback data:', err.message);
+      }
+    }
+    renderSongs(songsData);
+  }
+
+  // ============================================================
   // LOAD CLASS LOG FROM GOOGLE SHEET (or fall back to hardcoded)
   // ============================================================
   async function loadClassLog() {
@@ -1527,6 +1585,7 @@
     renderClassLog();
   }
 
+  loadSongs();
   loadClassLog();
 </script>
 
