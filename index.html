@@ -1016,7 +1016,7 @@
   // ║  📊 GOOGLE SHEET URL — paste your published sheet URL here  ║
   // ║  Cole aqui o link da sua planilha publicada                 ║
   // ╚══════════════════════════════════════════════════════════════╝
-  const SHEET_URL = '';  // ← Paste your Class Log sheet CSV URL here
+  const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1il9WT79RlnQFL9KTWV262gBHTbeXQQEnBtk4nNrmOO4/gviz/tq?tqx=out:csv&sheet=Calendar';
   const SONGS_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1il9WT79RlnQFL9KTWV262gBHTbeXQQEnBtk4nNrmOO4/gviz/tq?tqx=out:csv&sheet=Songs%20%26%20Videos';
 
   // NAV
@@ -1500,6 +1500,10 @@
   async function loadClassLog() {
     if (SHEET_URL) {
       try {
+        // Build a lookup of hardcoded URLs by date (old entries have URLs already)
+        const urlLookup = {};
+        classLog.forEach(function(c) { urlLookup[c.date] = c; });
+
         const resp = await fetch(SHEET_URL);
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const csv = await resp.text();
@@ -1518,18 +1522,12 @@
           }
           cols.push(cur.trim());
 
-          // Columns: Date | Unit | Absent | Notes | Cancelled | Slides URL | Homework URL
-          const dateRaw = cols[0] || '';
-          const unit = cols[1] || '';
-          const absentStr = cols[2] || '';
-          const notes = cols[3] || '';
-          const cancelled = (cols[4] || '').toLowerCase() === 'yes';
-          let slidesUrl = cols[5] || '';
-          let homeworkUrl = cols[6] || '';
-
-          // Clean #REF! values
-          if (slidesUrl === '#REF!') slidesUrl = '';
-          if (homeworkUrl === '#REF!') homeworkUrl = '';
+          // Sheet columns: Classes Theme | Week Day | Date | Class Slides | Homework | Notes | Units
+          const unit = cols[0] || '';
+          const dateRaw = cols[2] || '';
+          const slidesRaw = cols[3] || '';
+          const hwRaw = cols[4] || '';
+          const notes = cols[5] || '';
 
           // Parse DD/MM/YYYY → YYYY-MM-DD
           const parts = dateRaw.split('/');
@@ -1545,13 +1543,36 @@
           const mNames = ['','jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
           const monthKey = mNames[mNum] + yShort;
 
-          // Build absent array
-          const absent = absentStr
-            ? absentStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean)
-            : [];
+          // Determine slides/homework URLs
+          // If the cell value starts with http, it's a real URL (new entries)
+          // Otherwise, look up the URL from the hardcoded data (old entries)
+          const existing = urlLookup[isoDate];
+          const isUrl = function(v) { return v && v.indexOf('http') === 0; };
 
-          // Build slidesTitle from date + unit
-          const slidesTitle = dateRaw.replace(/\/\d{4}$/, '/' + yShort) + ' - ' + unit;
+          let slidesUrl = isUrl(slidesRaw) ? slidesRaw : (existing ? existing.slidesUrl : '');
+          let homeworkUrl = isUrl(hwRaw) ? hwRaw : (existing ? existing.homeworkUrl : '');
+          if (slidesUrl === '#REF!') slidesUrl = '';
+          if (homeworkUrl === '#REF!') homeworkUrl = '';
+
+          // Slides title from sheet text (or fallback)
+          const slidesTitle = !isUrl(slidesRaw) && slidesRaw
+            ? slidesRaw
+            : (existing ? existing.slidesTitle : unit);
+
+          // Detect cancelled classes (from Notes)
+          const cancelled = notes.toLowerCase().indexOf('cancelled') >= 0
+            || notes.toLowerCase().indexOf('vacation') >= 0
+            || notes.toLowerCase().indexOf('carnaval') >= 0
+            || (existing ? existing.cancelled : false);
+
+          // Parse absent names from Notes ("Faltas: Zilda" / "Faltas: Sandra")
+          let absent = [];
+          const faltasMatch = notes.match(/Faltas?:\s*([^.;]+)/i);
+          if (faltasMatch) {
+            absent = faltasMatch[1].split(/[,&]/).map(function(s) { return s.trim(); }).filter(Boolean);
+          } else if (existing) {
+            absent = existing.absent || [];
+          }
 
           parsed.push({
             date: isoDate,
@@ -1566,7 +1587,7 @@
           });
         });
         if (parsed.length > 0) {
-          classLog.length = 0; // clear hardcoded data
+          classLog.length = 0;
           parsed.forEach(function(e) { classLog.push(e); });
           console.log('✅ Loaded ' + classLog.length + ' classes from Google Sheet');
         }
