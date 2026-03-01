@@ -1150,7 +1150,7 @@
   function renderClassLog() {
     const tbody = document.getElementById('class-log-body');
     const label = document.getElementById('log-month-label');
-    if (label) label.textContent = monthNames[currentMonth] + ' · ' + monthNamesPT[currentMonth] + ' ' + currentYear;
+    if (label) label.textContent = monthNames[currentMonth] + ' ' + currentYear;
     // Filter to current calendar month (synced), most recent first
     const sorted = [...classLog]
       .filter(c => {
@@ -1221,7 +1221,7 @@
   function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     const title = document.getElementById('cal-month-title');
-    title.textContent = monthNames[currentMonth] + ' · ' + monthNamesPT[currentMonth] + ' ' + currentYear;
+    title.textContent = monthNames[currentMonth] + ' ' + currentYear;
 
     const today = new Date();
     const firstDay = new Date(currentYear, currentMonth, 1).getDay();
