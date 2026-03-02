@@ -609,9 +609,30 @@
   }
 
   .topic-pill:hover { border-color: var(--terracotta); background: var(--peach); }
+  .topic-pill.has-resources { position: relative; }
+  .topic-pill.has-resources:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
   .topic-pill .topic-icon { font-size: 24px; }
   .topic-pill .topic-text strong { display: block; font-size: 14px; color: var(--warm-brown); }
   .topic-pill .topic-text span { font-size: 12px; color: #9e7d6a; }
+
+  .resource-link {
+    display: block;
+    padding: 14px 20px;
+    margin-bottom: 10px;
+    background: white;
+    border: 2px solid var(--peach-mid);
+    border-radius: 12px;
+    color: var(--warm-brown);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    transition: all 0.2s;
+  }
+  .resource-link:hover {
+    border-color: var(--terracotta);
+    background: var(--peach);
+    transform: translateY(-1px);
+  }
 
   /* DIVIDER */
   .divider {
@@ -1350,15 +1371,28 @@
   // Status flows automatically from unitRoadmap (done/current/upcoming)
   // To add a new topic: just add a row here with the unit number!
   // ============================================================
+  // resources: array of { label, url } — pills with resources become clickable
   const theoryTopics = [
     { icon: '🔤', name: 'Alphabet & Pronunciation', unit: 1 },
-    { icon: '👋', name: 'Greetings & Introductions', unit: 1 },
-    { icon: '🔢', name: 'Numbers 1–100', unit: 2, unitLabel: 'Units 1–2' },
+    { icon: '👋', name: 'Greetings & Introductions', unit: 1, resources: [
+      { label: '📊 Greetings & Intro Slides', url: 'https://docs.google.com/presentation/d/13euWxmGgoVCTBk13rofito_IWK4UKaRrnoORF_vYJO8/edit' },
+    ]},
+    { icon: '🔢', name: 'Numbers 1–100', unit: 2, unitLabel: 'Units 1–2', resources: [
+      { label: '📄 Numbers Practice', url: 'https://docs.google.com/document/d/1XuP0A3hN1IAyhYCmZM6dm7WAmj1xYDHZ8g0yjxqZguw/edit' },
+    ]},
     { icon: '💰', name: 'Money & Shopping', unit: 2 },
-    { icon: '🌈', name: 'Colours & Adjectives', unit: 2 },
+    { icon: '🌈', name: 'Colours & Adjectives', unit: 2, resources: [
+      { label: '📊 Colours Slides', url: 'https://docs.google.com/presentation/d/148JIHID3H4yMELx5cPbUaiF00yBtAou22TrPDT0CPD4/edit' },
+    ]},
+    { icon: '👗', name: 'Clothes & Accessories', unit: 2, resources: [
+      { label: '📊 Clothes & Accessories Slides', url: 'https://docs.google.com/presentation/d/1LGix4183hjQNPamJAJNfJAHbr1PHj90pDiyG7saDfE8/edit' },
+    ]},
     { icon: '🕐', name: 'Time & Daily Routines', unit: 3 },
     { icon: '📅', name: 'Days, Months & Seasons', unit: 4 },
-    { icon: '📍', name: 'Prepositions', unit: 4 },
+    { icon: '📍', name: 'Prepositions', unit: 4, resources: [
+      { label: '📄 Prepositions Practice', url: 'https://docs.google.com/document/d/11hLeBpdGy0N_3AyASUE8hfJgclc3n3dmm9MmfwwNiUE/edit' },
+      { label: '📊 Prepositions Slides', url: 'https://docs.google.com/presentation/d/12voKacWSxCpH0vr7sn7_hVodYPVHb34YPPC7e5vAfW0/edit' },
+    ]},
     { icon: '🔄', name: 'Adverbs of Frequency', unit: 4 },
     { icon: '👨‍👩‍👧', name: 'Family & Relationships', unit: 5 },
   ];
@@ -1369,7 +1403,7 @@
     var html = '<h3 style="font-family:\'Playfair Display\',serif; font-size:22px; margin-bottom:20px; color:var(--warm-brown)">Topics we\'ve covered · Tópicos já estudados</h3>';
     html += '<div class="theory-topics">';
 
-    theoryTopics.forEach(function(topic) {
+    theoryTopics.forEach(function(topic, idx) {
       // Look up unit status from unitRoadmap
       var roadmapEntry = unitRoadmap.find(function(u) { return u.num === topic.unit; });
       var status = roadmapEntry ? roadmapEntry.status : 'upcoming';
@@ -1377,27 +1411,55 @@
       var unitLabel = topic.unitLabel || ('Unit ' + topic.unit);
       var statusLabel = '';
       var pillStyle = '';
+      var extraClass = '';
 
       if (status === 'done') {
         statusLabel = '✅ Done';
       } else if (status === 'current') {
         statusLabel = '🔄 In progress';
-        pillStyle = ' style="border-color:var(--terracotta); background:var(--peach)"';
+        pillStyle = 'border-color:var(--terracotta); background:var(--peach);';
       } else {
         statusLabel = 'Coming soon';
-        pillStyle = ' style="opacity:0.5"';
+        pillStyle = 'opacity:0.5;';
       }
 
-      html += '<div class="topic-pill"' + pillStyle + '>';
+      var hasResources = topic.resources && topic.resources.length > 0;
+      if (hasResources) {
+        pillStyle += ' cursor:pointer;';
+        extraClass = ' has-resources';
+      }
+
+      var clickAttr = hasResources ? ' onclick="openResourcePopup(' + idx + ')"' : '';
+
+      html += '<div class="topic-pill' + extraClass + '" style="' + pillStyle + '"' + clickAttr + '>';
       html += '<div class="topic-icon">' + topic.icon + '</div>';
       html += '<div class="topic-text">';
       html += '<strong>' + topic.name + '</strong>';
-      html += '<span>' + unitLabel + ' · ' + statusLabel + '</span>';
+      html += '<span>' + unitLabel + ' · ' + statusLabel;
+      if (hasResources) html += ' · 📎 ' + topic.resources.length;
+      html += '</span>';
       html += '</div></div>';
     });
 
     html += '</div>';
     container.innerHTML = html;
+  }
+
+  function openResourcePopup(topicIdx) {
+    var topic = theoryTopics[topicIdx];
+    if (!topic || !topic.resources) return;
+
+    var modal = document.getElementById('resource-modal');
+    document.getElementById('resource-modal-icon').textContent = topic.icon;
+    document.getElementById('resource-modal-title').textContent = topic.name;
+
+    var body = document.getElementById('resource-modal-body');
+    var html = '<p style="margin-bottom:16px; color:#9e7d6a; font-size:14px">Extra study materials · Material extra de estudo</p>';
+    topic.resources.forEach(function(r) {
+      html += '<a href="' + r.url + '" target="_blank" class="resource-link">' + r.label + '</a>';
+    });
+    body.innerHTML = html;
+    modal.classList.add('open');
   }
 
   // ============================================================
@@ -1805,6 +1867,18 @@
     <div class="modal-date" id="modal-date"></div>
     <div class="modal-title" id="modal-title"></div>
     <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- RESOURCE POPUP MODAL -->
+<div class="modal-overlay" id="resource-modal" onclick="if(event.target.id==='resource-modal') this.classList.remove('open')">
+  <div class="modal-box">
+    <button class="modal-close" onclick="document.getElementById('resource-modal').classList.remove('open')">✕</button>
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px">
+      <span id="resource-modal-icon" style="font-size:32px"></span>
+      <h3 id="resource-modal-title" style="font-family:'Playfair Display',serif; font-size:22px; color:var(--warm-brown)"></h3>
+    </div>
+    <div id="resource-modal-body"></div>
   </div>
 </div>
 
