@@ -860,6 +860,7 @@
   // ╚══════════════════════════════════════════════════════════════╝
   const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1il9WT79RlnQFL9KTWV262gBHTbeXQQEnBtk4nNrmOO4/gviz/tq?tqx=out:csv&sheet=Calendar';
   const SONGS_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1il9WT79RlnQFL9KTWV262gBHTbeXQQEnBtk4nNrmOO4/gviz/tq?tqx=out:csv&sheet=Songs%20%26%20Videos';
+  const SETTINGS_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1il9WT79RlnQFL9KTWV262gBHTbeXQQEnBtk4nNrmOO4/gviz/tq?tqx=out:csv&sheet=Settings';
 
   // NAV
   function showSection(id) {
@@ -1404,15 +1405,27 @@
   // ============================================================
 
   // Unit roadmap (curated by Teacher Ana — easy to update here)
-  // status: 'done' | 'current' | 'upcoming'
+  // Status is auto-set by loadSettings() from Google Sheet "Settings" tab
+  // Fallback: currentUnit = 4 if sheet not available
+  let currentUnit = 4;
   const unitRoadmap = [
-    { num: 1, title: 'Introduction to English', desc: 'Alphabet, greetings, numbers 1-20, subject pronouns', status: 'done' },
-    { num: 2, title: 'Numbers, Time & Everyday Phrases', desc: 'Shopping, colours, money, "to be / to have"', status: 'done' },
-    { num: 3, title: 'Present Simple & Daily Routines', desc: 'Times of day, meals, Chicken Little', status: 'done' },
-    { num: 4, title: 'Day to Day', desc: 'Prepositions, adverbs of frequency, time, months', status: 'current' },
-    { num: 5, title: 'Family & Personal Life', desc: 'Coming soon · Em breve', status: 'upcoming' },
-    { num: 6, title: 'Everyday Situations', desc: 'Restaurants, directions, doctor · Coming soon', status: 'upcoming' },
+    { num: 1, title: 'Introduction to English', desc: 'Alphabet, greetings, numbers 1-20, subject pronouns' },
+    { num: 2, title: 'Numbers, Time & Everyday Phrases', desc: 'Shopping, colours, money, "to be / to have"' },
+    { num: 3, title: 'Present Simple & Daily Routines', desc: 'Times of day, meals, Chicken Little' },
+    { num: 4, title: 'Day to Day', desc: 'Prepositions, adverbs of frequency, time, months' },
+    { num: 5, title: 'Family & Personal Life', desc: 'Coming soon · Em breve' },
+    { num: 6, title: 'Everyday Situations', desc: 'Restaurants, directions, doctor · Coming soon' },
   ];
+
+  // Auto-set unit statuses based on currentUnit number
+  function updateUnitStatuses() {
+    unitRoadmap.forEach(function(u) {
+      if (u.num < currentUnit) u.status = 'done';
+      else if (u.num === currentUnit) u.status = 'current';
+      else u.status = 'upcoming';
+    });
+  }
+  updateUnitStatuses(); // Set initial statuses from fallback
 
   function renderProgress() {
     const container = document.getElementById('progress-content');
@@ -1629,9 +1642,52 @@
   }
 
   // ============================================================
+  // LOAD SETTINGS FROM GOOGLE SHEET (Current Unit, etc.)
+  // Sheet tab "Settings" with columns: Setting | Value
+  // ============================================================
+  async function loadSettings() {
+    if (!SETTINGS_SHEET_URL) return;
+    try {
+      const resp = await fetch(SETTINGS_SHEET_URL);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const csv = await resp.text();
+      const rows = csv.split('\n').slice(1); // skip header
+      rows.forEach(function(row) {
+        if (!row.trim()) return;
+        // Simple CSV parse (Setting, Value)
+        const cols = [];
+        let cur = '', inQ = false;
+        for (let i = 0; i < row.length; i++) {
+          const ch = row[i];
+          if (ch === '"') { inQ = !inQ; }
+          else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+          else { cur += ch; }
+        }
+        cols.push(cur.trim());
+
+        const setting = cols[0] || '';
+        const value = cols[1] || '';
+
+        if (setting.toLowerCase().indexOf('current unit') >= 0) {
+          var num = parseInt(value, 10);
+          if (!isNaN(num) && num > 0) {
+            currentUnit = num;
+            console.log('✅ Current unit from Settings: ' + currentUnit);
+          }
+        }
+      });
+      updateUnitStatuses();
+    } catch (err) {
+      console.warn('⚠️ Could not load Settings tab, using fallback (Unit ' + currentUnit + '):', err.message);
+    }
+  }
+
+  // ============================================================
   // LOAD CLASS LOG FROM GOOGLE SHEET (or fall back to hardcoded)
   // ============================================================
   async function loadClassLog() {
+    // Load settings first (current unit, etc.)
+    await loadSettings();
     if (SHEET_URL) {
       try {
         // Build a lookup of hardcoded URLs by date (old entries have URLs already)
