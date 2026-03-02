@@ -778,80 +778,7 @@
       </a>
     </div>
 
-    <h3 style="font-family:'Playfair Display',serif; font-size:22px; margin-bottom:20px; color:var(--warm-brown)">Topics we've covered · Tópicos já estudados</h3>
-
-    <div class="theory-topics">
-      <div class="topic-pill">
-        <div class="topic-icon">🔤</div>
-        <div class="topic-text">
-          <strong>Alphabet & Pronunciation</strong>
-          <span>Unit 1 · ✅ Done</span>
-        </div>
-      </div>
-      <div class="topic-pill">
-        <div class="topic-icon">👋</div>
-        <div class="topic-text">
-          <strong>Greetings & Introductions</strong>
-          <span>Unit 1 · ✅ Done</span>
-        </div>
-      </div>
-      <div class="topic-pill">
-        <div class="topic-icon">🔢</div>
-        <div class="topic-text">
-          <strong>Numbers 1–100</strong>
-          <span>Units 1–2 · ✅ Done</span>
-        </div>
-      </div>
-      <div class="topic-pill">
-        <div class="topic-icon">💰</div>
-        <div class="topic-text">
-          <strong>Money & Shopping</strong>
-          <span>Unit 2 · ✅ Done</span>
-        </div>
-      </div>
-      <div class="topic-pill">
-        <div class="topic-icon">🌈</div>
-        <div class="topic-text">
-          <strong>Colours & Adjectives</strong>
-          <span>Unit 2 · ✅ Done</span>
-        </div>
-      </div>
-      <div class="topic-pill">
-        <div class="topic-icon">🕐</div>
-        <div class="topic-text">
-          <strong>Time & Daily Routines</strong>
-          <span>Unit 3 · ✅ Done</span>
-        </div>
-      </div>
-      <div class="topic-pill">
-        <div class="topic-icon">📅</div>
-        <div class="topic-text">
-          <strong>Days, Months & Seasons</strong>
-          <span>Unit 4 · ✅ Done</span>
-        </div>
-      </div>
-      <div class="topic-pill" style="border-color:var(--terracotta); background:var(--peach)">
-        <div class="topic-icon">📍</div>
-        <div class="topic-text">
-          <strong>Prepositions</strong>
-          <span>Unit 4 · 🔄 Reviewing</span>
-        </div>
-      </div>
-      <div class="topic-pill" style="border-color:var(--terracotta); background:var(--peach)">
-        <div class="topic-icon">🔄</div>
-        <div class="topic-text">
-          <strong>Adverbs of Frequency</strong>
-          <span>Unit 4 · 🔄 Reviewing</span>
-        </div>
-      </div>
-      <div class="topic-pill" style="opacity:0.5">
-        <div class="topic-icon">👨‍👩‍👧</div>
-        <div class="topic-text">
-          <strong>Family & Relationships</strong>
-          <span>Unit 5 · Coming soon</span>
-        </div>
-      </div>
-    </div>
+    <div id="theory-content"><!-- Populated by JS --></div>
   </section>
 
   <!-- SONGS & VIDEOS -->
@@ -1418,6 +1345,61 @@
   }
 
   // ============================================================
+  // THEORY & GRAMMAR — dynamic topic pills
+  // Status flows automatically from unitRoadmap (done/current/upcoming)
+  // To add a new topic: just add a row here with the unit number!
+  // ============================================================
+  const theoryTopics = [
+    { icon: '🔤', name: 'Alphabet & Pronunciation', unit: 1 },
+    { icon: '👋', name: 'Greetings & Introductions', unit: 1 },
+    { icon: '🔢', name: 'Numbers 1–100', unit: 2, unitLabel: 'Units 1–2' },
+    { icon: '💰', name: 'Money & Shopping', unit: 2 },
+    { icon: '🌈', name: 'Colours & Adjectives', unit: 2 },
+    { icon: '🕐', name: 'Time & Daily Routines', unit: 3 },
+    { icon: '📅', name: 'Days, Months & Seasons', unit: 4 },
+    { icon: '📍', name: 'Prepositions', unit: 4 },
+    { icon: '🔄', name: 'Adverbs of Frequency', unit: 4 },
+    { icon: '👨‍👩‍👧', name: 'Family & Relationships', unit: 5 },
+  ];
+
+  function renderTheory() {
+    var container = document.getElementById('theory-content');
+
+    var html = '<h3 style="font-family:\'Playfair Display\',serif; font-size:22px; margin-bottom:20px; color:var(--warm-brown)">Topics we\'ve covered · Tópicos já estudados</h3>';
+    html += '<div class="theory-topics">';
+
+    theoryTopics.forEach(function(topic) {
+      // Look up unit status from unitRoadmap
+      var roadmapEntry = unitRoadmap.find(function(u) { return u.num === topic.unit; });
+      var status = roadmapEntry ? roadmapEntry.status : 'upcoming';
+
+      var unitLabel = topic.unitLabel || ('Unit ' + topic.unit);
+      var statusLabel = '';
+      var pillStyle = '';
+
+      if (status === 'done') {
+        statusLabel = '✅ Done';
+      } else if (status === 'current') {
+        statusLabel = '🔄 In progress';
+        pillStyle = ' style="border-color:var(--terracotta); background:var(--peach)"';
+      } else {
+        statusLabel = 'Coming soon';
+        pillStyle = ' style="opacity:0.5"';
+      }
+
+      html += '<div class="topic-pill"' + pillStyle + '>';
+      html += '<div class="topic-icon">' + topic.icon + '</div>';
+      html += '<div class="topic-text">';
+      html += '<strong>' + topic.name + '</strong>';
+      html += '<span>' + unitLabel + ' · ' + statusLabel + '</span>';
+      html += '</div></div>';
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // ============================================================
   // OUR JOURNEY — auto-calculated stats + unit roadmap
   // ============================================================
 
@@ -1750,6 +1732,7 @@
     // Render everything (whether from sheet or fallback)
     renderThisWeek();
     renderHomework();
+    renderTheory();
     renderProgress();
     renderCalendar();
     renderClassLog();
